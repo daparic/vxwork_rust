@@ -1,5 +1,6 @@
 use std::{
     ffi::CString,
+    marker::PhantomData,
     os::raw::{c_char, c_void},
 };
 
@@ -11,6 +12,7 @@ mod binding;
 mod error;
 
 pub const WAIT_FOREVER: i32 = -1;
+pub const SIZE: usize = std::mem::size_of::<usize>();
 
 bitflags! {
     pub struct SemaphoreOption: i32 {
@@ -26,6 +28,30 @@ bitflags! {
         const NO_ID_VALIDATE = 0x000800;
         const NO_ERROR_CHECK = 0x001000;
         const TASK_DELETION_WAKEUP = 0x002000;
+    }
+}
+
+pub trait Nullable: Sized {
+    fn null(&self) -> bool;
+
+    fn if_error(self) -> Result<Self, Error> {
+        if self.null() {
+            Err(errno().into())
+        } else {
+            Ok(self)
+        }
+    }
+}
+
+impl Nullable for i32 {
+    fn null(&self) -> bool {
+        *self < 0
+    }
+}
+
+impl<T> Nullable for *mut T {
+    fn null(&self) -> bool {
+        self.is_null()
     }
 }
 
@@ -54,19 +80,15 @@ pub unsafe fn task_spawn_unchecked(
     let c_string = CString::new(name).unwrap();
     let name: *mut c_char = c_string.into_raw();
 
-    let tid = taskSpawn(
+    taskSpawn(
         name, priority, 0x100, 2000, task, value, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    );
-    if tid != -1 {
-        Ok(tid)
-    } else {
-        Err(errno().into())
-    }
+    )
+    .if_error()
 }
 
 pub fn task_spawn<F>(name: &str, priority: i32, task: F) -> Result<i32, Error>
 where
-    F: FnOnce() + Clone,
+    F: FnOnce(),
     F: Send + 'static,
 {
     let main: Box<dyn FnOnce()> = Box::new(task);
@@ -87,25 +109,14 @@ pub fn task_delay(tick: u16) -> i32 {
     unsafe { taskDelay(tick as i32) }
 }
 
-pub fn task_priority_set(tid: i32, priority: u8) -> Result<(), Error> {
-    unsafe {
-        if taskPrioritySet(tid, priority as i32) == -1 {
-            return Err(errno().into());
-        }
-        Ok(())
-    }
+pub fn task_priority_set(tid: i32, priority: u8) -> Result<i32, Error> {
+    unsafe { taskPrioritySet(tid, priority as i32).if_error() }
 }
 
 pub fn task_priority_get(tid: i32) -> Result<i32, Error> {
     let buf: i32 = 0;
     let ptr = buf as *mut i32;
-    unsafe {
-        let k = taskPriorityGet(tid, ptr);
-        if k == -1 {
-            return Err(errno().into());
-        }
-        Ok(*ptr)
-    }
+    unsafe { taskPriorityGet(tid, ptr).if_error().map(|_| *ptr) }
 }
 
 #[derive(Clone, Copy)]
@@ -117,31 +128,52 @@ unsafe impl Send for Semaphore {}
 unsafe impl Sync for Semaphore {}
 
 impl Semaphore {
-    pub fn new(option: SemaphoreOption, initial: bool) -> Option<Semaphore> {
+    pub fn new(option: SemaphoreOption, initial: bool) -> Result<Self, Error> {
         let initial = if initial { 1 } else { 0 };
-        let sid = unsafe { semBCreate(option.bits(), initial) };
-        if sid.is_null() {
-            None
-        } else {
-            Some(Self { sid })
-        }
+        unsafe { semBCreate(option.bits(), initial) }
+            .if_error()
+            .map(|sid| Self { sid })
     }
 
-    pub fn take(self, timeout: i32) -> Result<(), Error> {
-        let res = unsafe { semTake(self.sid, timeout) };
-        if res < 0 {
-            Err(errno().into())
-        } else {
-            Ok(())
-        }
+    pub fn take(self, timeout: i32) -> Result<i32, Error> {
+        unsafe { semTake(self.sid, timeout) }.if_error()
     }
 
-    pub fn release(self) -> Result<(), Error> {
-        let res = unsafe { semGive(self.sid) };
-        if res < 0 {
-            Err(errno().into())
-        } else {
-            Ok(())
-        }
+    pub fn release(self) -> Result<i32, Error> {
+        unsafe { semGive(self.sid) }.if_error()
+    }
+}
+
+#[derive(Clone)]
+pub struct MessageQueue<T> {
+    handle: *mut c_void,
+    _marker: PhantomData<T>,
+}
+
+unsafe impl<T: Send> Send for MessageQueue<T> {}
+unsafe impl<T: Sync> Sync for MessageQueue<T> {}
+
+impl<T> MessageQueue<T> {
+    pub fn new(buffer: i32) -> Result<Self, Error> {
+        unsafe { msgQCreate(buffer, SIZE as i32, 0x00) }
+            .if_error()
+            .map(|handle| Self {
+                handle,
+                _marker: Default::default(),
+            })
+    }
+
+    pub fn send(&self, t: T, timeout: i32, priority: i32) -> Result<i32, Error> {
+        let boxed = Box::new(t);
+        let p = Box::into_raw(Box::new(boxed)) as *mut i8;
+        unsafe { msgQSend(self.handle, p, SIZE as u32, timeout, priority) }.if_error()
+    }
+
+    pub fn receive(&self, timeout: i32) -> Result<T, Error> {
+        let mut buf = 0usize;
+        let p = &mut buf as *mut usize as *mut i8;
+        unsafe { msgQReceive(self.handle, p, SIZE as u32, timeout) }
+            .if_error()
+            .map(|_| unsafe { *Box::from_raw(buf as *mut T) })
     }
 }
