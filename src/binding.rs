@@ -48,4 +48,5 @@ extern "C" {
         length: c_uint,
         timeout: c_int,
     ) -> c_int;
+    pub fn msgQDelete(mqid: *mut c_void) -> c_int;
 }
