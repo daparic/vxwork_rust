@@ -30,11 +30,11 @@ bitflags! {
 }
 
 pub fn errno() -> i32 {
-    unsafe { errnoGetWrapper() }
+    unsafe { errnoGet() }
 }
 
 pub fn task_id_self() -> i32 {
-    unsafe { taskIdSelfWrapper() }
+    unsafe { taskIdSelf() }
 }
 
 // Safety: task must be send and be inbound
@@ -54,7 +54,7 @@ pub unsafe fn task_spawn_unchecked(
     let c_string = CString::new(name).unwrap();
     let name: *mut c_char = c_string.into_raw();
 
-    let tid = taskSpawnWrapper(
+    let tid = taskSpawn(
         name, priority, 0x100, 2000, task, value, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     );
     if tid != -1 {
@@ -84,12 +84,12 @@ where
 }
 
 pub fn task_delay(tick: u16) -> i32 {
-    unsafe { taskDelayWrapper(tick as i32) }
+    unsafe { taskDelay(tick as i32) }
 }
 
 pub fn task_priority_set(tid: i32, priority: u8) -> Result<(), Error> {
     unsafe {
-        if taskPrioritySetWrapper(tid, priority as i32) == -1 {
+        if taskPrioritySet(tid, priority as i32) == -1 {
             return Err(errno().into());
         }
         Ok(())
@@ -100,7 +100,7 @@ pub fn task_priority_get(tid: i32) -> Result<i32, Error> {
     let buf: i32 = 0;
     let ptr = buf as *mut i32;
     unsafe {
-        let k = taskPriorityGetWrapper(tid, ptr);
+        let k = taskPriorityGet(tid, ptr);
         if k == -1 {
             return Err(errno().into());
         }
@@ -119,7 +119,7 @@ unsafe impl Sync for Semaphore {}
 impl Semaphore {
     pub fn new(option: SemaphoreOption, initial: bool) -> Option<Semaphore> {
         let initial = if initial { 1 } else { 0 };
-        let sid = unsafe { semBCreateWrapper(option.bits(), initial) };
+        let sid = unsafe { semBCreate(option.bits(), initial) };
         if sid.is_null() {
             None
         } else {
@@ -128,7 +128,7 @@ impl Semaphore {
     }
 
     pub fn take(self, timeout: i32) -> Result<(), Error> {
-        let res = unsafe { semTakeWrapper(self.sid, timeout) };
+        let res = unsafe { semTake(self.sid, timeout) };
         if res < 0 {
             Err(errno().into())
         } else {
@@ -137,7 +137,7 @@ impl Semaphore {
     }
 
     pub fn release(self) -> Result<(), Error> {
-        let res = unsafe { semGiveWrapper(self.sid) };
+        let res = unsafe { semGive(self.sid) };
         if res < 0 {
             Err(errno().into())
         } else {
