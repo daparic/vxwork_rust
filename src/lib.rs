@@ -1,6 +1,5 @@
 use std::{
     ffi::CString,
-    fmt::{Debug, Display},
     os::raw::{c_char, c_void},
 };
 
@@ -93,7 +92,7 @@ pub fn task_priority_set(tid: i32, priority: u8) -> Result<(), Error> {
         if taskPrioritySetWrapper(tid, priority as i32) == -1 {
             return Err(errno().into());
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -131,7 +130,7 @@ impl Semaphore {
     pub fn take(self, timeout: i32) -> Result<(), Error> {
         let res = unsafe { semTakeWrapper(self.sid, timeout) };
         if res < 0 {
-            return Err(errno().into());
+            Err(errno().into())
         } else {
             Ok(())
         }
@@ -140,7 +139,7 @@ impl Semaphore {
     pub fn release(self) -> Result<(), Error> {
         let res = unsafe { semGiveWrapper(self.sid) };
         if res < 0 {
-            return Err(errno().into());
+            Err(errno().into())
         } else {
             Ok(())
         }
