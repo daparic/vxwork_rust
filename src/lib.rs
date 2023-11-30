@@ -63,6 +63,14 @@ pub fn task_id_self() -> i32 {
     unsafe { taskIdSelf() }
 }
 
+pub fn sys_clock_rate() -> i32 {
+    unsafe { sysClkRateGet() }
+}
+
+// pub fn kernel_time_slice(tick: i32) -> Result<i32, Error> {
+//     unsafe { kernelTimeSliceWrapper(tick) }.if_error()
+// }
+
 // Safety: task must be send and be inbound
 pub unsafe fn task_spawn_unchecked(
     name: &str,
@@ -98,8 +106,8 @@ where
     }
 }
 
-pub fn task_delay(tick: u16) -> i32 {
-    unsafe { taskDelay(tick as i32) }
+pub fn task_delay(tick: i32) -> Result<i32, Error> {
+    unsafe { taskDelay(tick) }.if_error()
 }
 
 pub fn task_priority_set(tid: i32, priority: u8) -> Result<i32, Error> {

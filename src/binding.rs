@@ -30,10 +30,12 @@ extern "C" {
 
     pub fn errnoGet() -> c_int;
 
+    // semLib.h
     pub fn semBCreate(option: c_int, init: c_int) -> *mut c_void;
     pub fn semTake(sid: *mut c_void, timeout: c_int) -> c_int;
     pub fn semGive(sid: *mut c_void) -> c_int;
 
+    // msgQLib.h
     pub fn msgQCreate(max_message: c_int, length: c_int, option: c_int) -> *mut c_void;
     pub fn msgQSend(
         mqid: *mut c_void,
@@ -49,4 +51,10 @@ extern "C" {
         timeout: c_int,
     ) -> c_int;
     pub fn msgQDelete(mqid: *mut c_void) -> c_int;
+
+    // sysLib.h
+    pub fn sysClkRateGet() -> c_int;
+
+    // kernelLib.h
+    // pub fn kernelTimeSlice(tick: c_int) -> c_int;
 }
