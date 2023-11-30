@@ -1,0 +1,3 @@
+use_small_heuristics = "MAX"
+merge_imports = true
+unstable_features = true

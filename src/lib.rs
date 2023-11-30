@@ -1,8 +1,6 @@
 use std::{
     ffi::CString,
-    marker::PhantomData,
     os::raw::{c_char, c_void},
-    sync::Arc,
 };
 
 use binding::*;
@@ -72,20 +70,13 @@ pub unsafe fn task_spawn_unchecked(
     task: unsafe extern "C" fn(*mut c_void),
     value: *mut c_void,
 ) -> Result<i32, Error> {
-    let name = if let Some((front, _)) = name.split_once('\0') {
-        front
-    } else {
-        name
-    };
+    let name = if let Some((front, _)) = name.split_once('\0') { front } else { name };
 
     // Unwrap is ok here because there would be no null bytes in name
     let c_string = CString::new(name).unwrap();
     let name: *mut c_char = c_string.into_raw();
 
-    taskSpawn(
-        name, priority, 0x100, 2000, task, value, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    )
-    .if_error()
+    taskSpawn(name, priority, 0x100, 2000, task, value, 0, 0, 0, 0, 0, 0, 0, 0, 0).if_error()
 }
 
 pub fn task_spawn<F>(name: &str, priority: i32, task: F) -> Result<i32, Error>
@@ -132,9 +123,7 @@ unsafe impl Sync for Semaphore {}
 impl Semaphore {
     pub fn new(option: SemaphoreOption, initial: bool) -> Result<Self, Error> {
         let initial = if initial { 1 } else { 0 };
-        unsafe { semBCreate(option.bits(), initial) }
-            .if_error()
-            .map(|sid| Self { sid })
+        unsafe { semBCreate(option.bits(), initial) }.if_error().map(|sid| Self { sid })
     }
 
     pub fn take(self, timeout: i32) -> Result<i32, Error> {

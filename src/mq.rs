@@ -14,6 +14,12 @@ struct InnerMQ {
     handle: *mut c_void,
 }
 
+#[repr(i32)]
+pub enum MessageQueuePriority {
+    Normal = 0,
+    Urgent = 1,
+}
+
 impl InnerMQ {
     fn new(handle: *mut c_void) -> Self {
         Self { handle }
@@ -26,9 +32,7 @@ impl InnerMQ {
     fn receive(&self, timeout: i32) -> Result<usize, Error> {
         let mut buf = 0usize;
         let p = &mut buf as *mut usize as *mut i8;
-        unsafe { msgQReceive(self.handle, p, SIZE as u32, timeout) }
-            .if_error()
-            .map(|_| buf)
+        unsafe { msgQReceive(self.handle, p, SIZE as u32, timeout) }.if_error().map(|_| buf)
     }
 }
 
@@ -43,24 +47,20 @@ unsafe impl<T: Sync> Sync for MessageQueue<T> {}
 
 impl<T> MessageQueue<T> {
     pub fn new(buffer: i32) -> Result<Self, Error> {
-        unsafe { msgQCreate(buffer, SIZE as i32, 0x00) }
-            .if_error()
-            .map(|handle| Self {
-                inner: Arc::new(InnerMQ::new(handle)),
-                _marker: Default::default(),
-            })
+        unsafe { msgQCreate(buffer, SIZE as i32, 0x00) }.if_error().map(|handle| Self {
+            inner: Arc::new(InnerMQ::new(handle)),
+            _marker: Default::default(),
+        })
     }
 
-    pub fn send(&self, t: T, timeout: i32, priority: i32) -> Result<i32, Error> {
+    pub fn send(&self, t: T, timeout: i32, priority: MessageQueuePriority) -> Result<i32, Error> {
         let boxed = Box::new(t);
         let p = Box::into_raw(Box::new(boxed)) as *mut i8;
-        self.inner.send(p, timeout, priority)
+        self.inner.send(p, timeout, priority as i32)
     }
 
     pub fn receive(&self, timeout: i32) -> Result<T, Error> {
-        self.inner
-            .receive(timeout)
-            .map(|buf| unsafe { *Box::from_raw(buf as *mut T) })
+        self.inner.receive(timeout).map(|buf| unsafe { *Box::from_raw(buf as *mut T) })
     }
 }
 

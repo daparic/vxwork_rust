@@ -1,4 +1,7 @@
-use hello::{mq::MessageQueue, task_spawn, WAIT_FOREVER};
+use hello::{
+    mq::{MessageQueue, MessageQueuePriority},
+    task_spawn, WAIT_FOREVER,
+};
 
 fn main() {
     let channel = MessageQueue::new(5).unwrap();
@@ -6,13 +9,11 @@ fn main() {
 
     task_spawn("send", 90, move || {
         for i in 0..10 {
-            let value = Some(format!(
-                "Hello World From other task though message queue: i = {}",
-                i
-            ));
-            clonned.send(value, WAIT_FOREVER, 0).unwrap();
+            let value =
+                Some(format!("Hello World From other task though message queue: i = {}", i));
+            clonned.send(value, WAIT_FOREVER, MessageQueuePriority::Normal).unwrap();
         }
-        clonned.send(None, WAIT_FOREVER, 0).unwrap();
+        clonned.send(None, WAIT_FOREVER, MessageQueuePriority::Normal).unwrap();
     })
     .unwrap();
 
