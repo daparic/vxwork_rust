@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 bitflags = "2.4.1"
+env_logger = { version = "0.10.1", default-features = false, features = ["humantime", "color"] }
 lazy_static = "1.4.0"
+log = "0.4.20"

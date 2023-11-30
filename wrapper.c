@@ -4,3 +4,4 @@
 #include <semLib.h>
 #include <msgQLib.h>
 #include <sysLib.h>
+#include <signal.h>
