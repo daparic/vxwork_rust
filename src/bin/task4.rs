@@ -1,4 +1,4 @@
-use hello::{task_spawn, MessageQueue, WAIT_FOREVER};
+use hello::{mq::MessageQueue, task_spawn, WAIT_FOREVER};
 
 fn main() {
     let channel = MessageQueue::new(5).unwrap();
