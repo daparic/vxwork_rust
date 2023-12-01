@@ -1,11 +1,8 @@
-use std::{hint::black_box, u64};
+use std::hint::black_box;
 
 use hello::{
-    binding::{taskDelay, taskPrioritySet, taskSafe},
-    error::Error,
-    signal::{kill, Signal},
-    task_delay, task_id_self, task_priority_get, task_priority_set, task_safe, task_spawn,
-    task_unsafe, Semaphore, SemaphoreOption, WAIT_FOREVER,
+    task_delay, task_id_self, task_priority_set, task_spawn, Semaphore, SemaphoreOption,
+    WAIT_FOREVER,
 };
 
 const HIGH_PRIORITY: i32 = 100;
@@ -24,18 +21,17 @@ fn main() {
     task_priority_set(task_id_self(), 101).unwrap();
 
     let upper_name = "LOW ";
-    let sem_c = sem.clone();
     println!("[MAIN] spawning task {}", upper_name);
     task_spawn(upper_name, LOW_PRIORITY, move || {
         for _ in 0..ITER {
             println!("[{}] Try to take mutex", upper_name);
-            sem_c.take(WAIT_FOREVER).unwrap();
+            sem.take(WAIT_FOREVER).unwrap();
             println!("[{}] Takes mutex", upper_name);
             for _ in 0..LONG_TIME {
                 black_box(0);
             }
             println!("[{}] Release mutex", upper_name);
-            sem_c.release().unwrap();
+            sem.release().unwrap();
         }
         println!("[{}] Done!", upper_name)
     })
@@ -45,7 +41,7 @@ fn main() {
     task_spawn("mid", MID_PRIORITY, move || {
         task_delay(10).unwrap();
         for i in 0..LONG_TIME * 10 {
-            if i % (LONG_TIME * 1) == 0 {
+            if i % LONG_TIME == 0 {
                 println!("[MID ] Running~")
             }
         }

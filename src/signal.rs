@@ -59,7 +59,7 @@ pub fn _signal_action(sig: i32, flag: i32, action: extern "C" fn(i32)) -> Result
         sa_flags: flag,
     };
     unsafe { sigemptyset(&mut signal.sa_mask as *mut _) };
-    unsafe { sigaction(sig as i32, &signal as *const _, std::ptr::null_mut()) }.if_error()
+    unsafe { sigaction(sig, &signal as *const _, std::ptr::null_mut()) }.if_error()
 }
 
 pub fn signal_action(sig: Signal, flag: i32, action: extern "C" fn(i32)) -> Result<i32, Error> {

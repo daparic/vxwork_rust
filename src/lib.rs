@@ -79,7 +79,8 @@ pub fn sys_clock_rate() -> i32 {
 //     unsafe { kernelTimeSliceWrapper(tick) }.if_error()
 // }
 
-// Safety: task must be send and be inbound
+/// # Safety
+/// Task must be Send and be inbound
 pub unsafe fn task_spawn_unchecked(
     name: &str,
     priority: i32,
