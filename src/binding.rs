@@ -27,11 +27,14 @@ extern "C" {
 
     pub fn taskPrioritySet(tid: c_int, priority: c_int) -> c_int;
     pub fn taskPriorityGet(tid: c_int, priority: *mut c_int) -> c_int;
+    pub fn taskUnsafe() -> c_int;
+    pub fn taskSafe() -> c_int;
 
     pub fn errnoGet() -> c_int;
 
     // semLib.h
     pub fn semBCreate(option: c_int, init: c_int) -> *mut c_void;
+    pub fn semMCreate(option: c_int) -> *mut c_void;
     pub fn semTake(sid: *mut c_void, timeout: c_int) -> c_int;
     pub fn semGive(sid: *mut c_void) -> c_int;
 

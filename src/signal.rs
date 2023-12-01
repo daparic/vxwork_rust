@@ -50,7 +50,7 @@ pub enum Signal {
     SIGRTMAX = 63,
 }
 
-pub fn signal_action(sig: Signal, flag: i32, action: extern "C" fn(i32)) -> Result<i32, Error> {
+pub fn _signal_action(sig: i32, flag: i32, action: extern "C" fn(i32)) -> Result<i32, Error> {
     let mut signal = sigaction_t {
         sa_u: sigaction__bindgen_ty_1 {
             __sa_handler: Some(action),
@@ -60,6 +60,10 @@ pub fn signal_action(sig: Signal, flag: i32, action: extern "C" fn(i32)) -> Resu
     };
     unsafe { sigemptyset(&mut signal.sa_mask as *mut _) };
     unsafe { sigaction(sig as i32, &signal as *const _, std::ptr::null_mut()) }.if_error()
+}
+
+pub fn signal_action(sig: Signal, flag: i32, action: extern "C" fn(i32)) -> Result<i32, Error> {
+    _signal_action(sig as i32, flag, action)
 }
 
 pub fn kill(tid: i32, sig: Signal) -> Result<i32, Error> {

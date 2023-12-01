@@ -64,6 +64,13 @@ pub fn task_id_self() -> i32 {
     unsafe { taskIdSelf() }
 }
 
+pub fn task_unsafe() -> Result<i32, Error> {
+    unsafe { taskUnsafe() }.if_error()
+}
+pub fn task_safe() -> Result<i32, Error> {
+    unsafe { taskSafe() }.if_error()
+}
+
 pub fn sys_clock_rate() -> i32 {
     unsafe { sysClkRateGet() }
 }
@@ -90,7 +97,21 @@ pub unsafe fn task_spawn_unchecked(
     let name: *mut c_char = c_string.into_raw();
 
     taskSpawn(
-        name, priority, 0x100, 2000, task, value, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        name,
+        priority,
+        0x100,
+        2000 * 1024,
+        task,
+        value,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     )
     .if_error()
 }
@@ -123,8 +144,8 @@ pub fn task_priority_set(tid: i32, priority: u8) -> Result<i32, Error> {
 }
 
 pub fn task_priority_get(tid: i32) -> Result<i32, Error> {
-    let buf: i32 = 0;
-    let ptr = buf as *mut i32;
+    let mut buf: i32 = 0;
+    let ptr = &mut buf as *mut i32;
     unsafe { taskPriorityGet(tid, ptr).if_error().map(|_| *ptr) }
 }
 
@@ -140,6 +161,12 @@ impl Semaphore {
     pub fn new(option: SemaphoreOption, initial: bool) -> Result<Self, Error> {
         let initial = if initial { 1 } else { 0 };
         unsafe { semBCreate(option.bits(), initial) }
+            .if_error()
+            .map(|sid| Self { sid })
+    }
+
+    pub fn new_mutex(option: SemaphoreOption) -> Result<Self, Error> {
+        unsafe { semMCreate(option.bits()) }
             .if_error()
             .map(|sid| Self { sid })
     }
