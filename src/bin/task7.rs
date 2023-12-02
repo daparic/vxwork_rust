@@ -22,16 +22,17 @@ fn main() {
 
     let upper_name = "LOW ";
     println!("[MAIN] spawning task {}", upper_name);
+    let sem_c = sem.clone();
     task_spawn(upper_name, LOW_PRIORITY, move || {
         for _ in 0..ITER {
             println!("[{}] Try to take mutex", upper_name);
-            sem.take(WAIT_FOREVER).unwrap();
+            sem_c.take(WAIT_FOREVER).unwrap();
             println!("[{}] Takes mutex", upper_name);
             for _ in 0..LONG_TIME {
                 black_box(0);
             }
             println!("[{}] Release mutex", upper_name);
-            sem.release().unwrap();
+            sem_c.release().unwrap();
         }
         println!("[{}] Done!", upper_name)
     })

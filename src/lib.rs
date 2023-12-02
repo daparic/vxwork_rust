@@ -1,6 +1,7 @@
 use std::{
     ffi::CString,
     os::raw::{c_char, c_void},
+    sync::Arc,
 };
 
 use binding::*;
@@ -150,9 +151,27 @@ pub fn task_priority_get(tid: i32) -> Result<i32, Error> {
     unsafe { taskPriorityGet(tid, ptr).if_error().map(|_| *ptr) }
 }
 
-#[derive(Clone, Copy)]
-pub struct Semaphore {
+struct InnerSemaphore {
     sid: *mut c_void,
+}
+
+impl InnerSemaphore {
+    pub fn take(&self, timeout: i32) -> Result<i32, Error> {
+        unsafe { semTake(self.sid, timeout) }.if_error()
+    }
+
+    fn release(&self) -> Result<i32, Error> {
+        unsafe { semGive(self.sid) }.if_error()
+    }
+
+    fn delete(&self) -> Result<i32, Error> {
+        unsafe { semDelete(self.sid) }.if_error()
+    }
+}
+
+#[derive(Clone)]
+pub struct Semaphore {
+    inner: Arc<InnerSemaphore>,
 }
 
 unsafe impl Send for Semaphore {}
@@ -163,26 +182,30 @@ impl Semaphore {
         let initial = if initial { 1 } else { 0 };
         unsafe { semBCreate(option.bits(), initial) }
             .if_error()
-            .map(|sid| Self { sid })
+            .map(|sid| Arc::new(InnerSemaphore { sid }))
+            .map(|inner| Self { inner })
     }
 
     pub fn new_mutex(option: SemaphoreOption) -> Result<Self, Error> {
         unsafe { semMCreate(option.bits()) }
             .if_error()
-            .map(|sid| Self { sid })
+            .map(|sid| Arc::new(InnerSemaphore { sid }))
+            .map(|inner| Self { inner })
     }
 
-    pub fn take(self, timeout: i32) -> Result<i32, Error> {
-        unsafe { semTake(self.sid, timeout) }.if_error()
+    pub fn take(&self, timeout: i32) -> Result<i32, Error> {
+        self.inner.take(timeout)
     }
 
-    pub fn release(self) -> Result<i32, Error> {
-        unsafe { semGive(self.sid) }.if_error()
+    pub fn release(&self) -> Result<i32, Error> {
+        self.inner.release()
     }
 }
 
 impl Drop for Semaphore {
     fn drop(&mut self) {
-        unsafe { semDelete(self.sid) };
+        if Arc::strong_count(&self.inner) == 1 {
+            let _ = self.inner.delete();
+        }
     }
 }
