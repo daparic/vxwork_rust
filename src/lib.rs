@@ -7,7 +7,7 @@ use binding::*;
 use bitflags::bitflags;
 use error::Error;
 
-pub mod binding;
+mod binding;
 pub mod error;
 pub mod mq;
 pub mod signal;
