@@ -1,9 +1,13 @@
-use hello::{task_id_self, task_priority_set, task_spawn};
+use hello::{task_id_self, task_priority_get, task_priority_set, task_spawn};
 
 static ITERATION: usize = 20;
 
 fn print_stuff() {
-    println!("Hello World from Task: 0x{:x}", task_id_self());
+    println!(
+        "Hello World from Task: 0x{:x}, p: {}",
+        task_id_self(),
+        task_priority_get(task_id_self()).unwrap()
+    );
 }
 
 fn main() {
