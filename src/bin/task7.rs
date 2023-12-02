@@ -12,8 +12,8 @@ const ITER: usize = 3;
 const LONG_TIME: usize = 1 << 28;
 
 fn main() {
-    let option = SemaphoreOption::Q_PRIORITY | SemaphoreOption::INVERSION_SAFE;
-    // let option = SemaphoreOption::Q_PRIORITY;
+    // let option = SemaphoreOption::Q_PRIORITY | SemaphoreOption::INVERSION_SAFE;
+    let option = SemaphoreOption::Q_PRIORITY;
     println!("[MAIN] options: {}", option.bits());
 
     let sem = Semaphore::new_mutex(option).unwrap();

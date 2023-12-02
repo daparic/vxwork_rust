@@ -9,7 +9,11 @@ fn spawn_task(name: &str, priority: i32) {
     let name_owned = name.to_string();
     task_spawn(name.as_ref(), priority, move || {
         for _ in 0..ITER {
-            println!("Hello from task {} with id {}", name_owned, task_id_self());
+            println!(
+                "Hello from task {} with id 0x{:x}",
+                name_owned,
+                task_id_self()
+            );
             for _ in 0..LONG_TIME {
                 black_box(0);
             }

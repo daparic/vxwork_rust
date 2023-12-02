@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 bitflags = "2.4.1"
 env_logger = { version = "0.10.1", default-features = false, features = ["humantime", "color"] }
-lazy_static = "1.4.0"
 log = "0.4.20"
 make = { version = "0.0.0", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
