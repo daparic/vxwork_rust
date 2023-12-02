@@ -32,11 +32,12 @@ impl InnerMQ {
     fn receive(&self, timeout: i32) -> Result<usize, Error> {
         let mut buf = 0usize;
         let p = &mut buf as *mut usize as *mut i8;
-        unsafe { msgQReceive(self.handle, p, SIZE as u32, timeout) }.if_error().map(|_| buf)
+        unsafe { msgQReceive(self.handle, p, SIZE as u32, timeout) }
+            .if_error()
+            .map(|_| buf)
     }
 }
 
-#[derive(Clone)]
 pub struct MessageQueue<T> {
     inner: Arc<InnerMQ>,
     _marker: PhantomData<fn() -> T>,
@@ -45,12 +46,25 @@ pub struct MessageQueue<T> {
 unsafe impl<T: Send> Send for MessageQueue<T> {}
 unsafe impl<T: Sync> Sync for MessageQueue<T> {}
 
+/// This is here because derive Clone expect T to also be Clone,
+/// but that is not needed as we don't actually store any T
+impl<T> Clone for MessageQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            _marker: self._marker.clone(),
+        }
+    }
+}
+
 impl<T> MessageQueue<T> {
     pub fn new(buffer: i32) -> Result<Self, Error> {
-        unsafe { msgQCreate(buffer, SIZE as i32, 0x00) }.if_error().map(|handle| Self {
-            inner: Arc::new(InnerMQ::new(handle)),
-            _marker: Default::default(),
-        })
+        unsafe { msgQCreate(buffer, SIZE as i32, 0x00) }
+            .if_error()
+            .map(|handle| Self {
+                inner: Arc::new(InnerMQ::new(handle)),
+                _marker: Default::default(),
+            })
     }
 
     pub fn send(&self, t: T, timeout: i32, priority: MessageQueuePriority) -> Result<i32, Error> {
@@ -60,7 +74,9 @@ impl<T> MessageQueue<T> {
     }
 
     pub fn receive(&self, timeout: i32) -> Result<T, Error> {
-        self.inner.receive(timeout).map(|buf| unsafe { *Box::from_raw(buf as *mut T) })
+        self.inner
+            .receive(timeout)
+            .map(|buf| unsafe { *Box::from_raw(buf as *mut T) })
     }
 }
 
