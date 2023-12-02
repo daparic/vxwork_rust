@@ -19,6 +19,7 @@ fn main() {
             clonned
                 .send(value, WAIT_FOREVER, MessageQueuePriority::Normal)
                 .unwrap();
+
             let ack = clonned_ack.receive(WAIT_FOREVER).unwrap();
             if ack {
                 println!("send: ack from rec")
@@ -33,6 +34,7 @@ fn main() {
     task_spawn("rec", 90, move || {
         while let Some(rec) = channel.receive(WAIT_FOREVER).unwrap() {
             println!("rec: {}", rec);
+
             ack_channel
                 .send(true, WAIT_FOREVER, MessageQueuePriority::Normal)
                 .unwrap();
