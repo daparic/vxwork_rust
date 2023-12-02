@@ -35,6 +35,7 @@ extern "C" {
     // semLib.h
     pub fn semBCreate(option: c_int, init: c_int) -> *mut c_void;
     pub fn semMCreate(option: c_int) -> *mut c_void;
+    pub fn semDelete(sid: *mut c_void) -> c_int;
     pub fn semTake(sid: *mut c_void, timeout: c_int) -> c_int;
     pub fn semGive(sid: *mut c_void) -> c_int;
 

@@ -180,3 +180,9 @@ impl Semaphore {
         unsafe { semGive(self.sid) }.if_error()
     }
 }
+
+impl Drop for Semaphore {
+    fn drop(&mut self) {
+        unsafe { semDelete(self.sid) };
+    }
+}
